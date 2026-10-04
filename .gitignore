@@ -1,0 +1,10 @@
+credentials.json
+token.json
+permissions.json
+audit_log.jsonl
+index_cache.pkl
+answer.md
+*.pem
+.env
+__pycache__/
+*.pyc

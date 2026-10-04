@@ -1,0 +1,8 @@
+{
+  "llm_model": "llama3.2",
+  "ollama_url": "http://localhost:11434",
+  "allowed_sources": ["local", "gmail", "drive", "calendar", "tasks", "web"],
+  "allowed_dirs": ["~/Documents"],
+  "max_file_mb": 10,
+  "top_k": 5
+}

@@ -1,0 +1,12 @@
+requests
+rank-bm25
+pypdf
+python-docx
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+ddgs
+fastapi
+uvicorn
+numpy
+pytest
