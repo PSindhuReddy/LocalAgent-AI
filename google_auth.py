@@ -3,10 +3,15 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+# SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
+#           "https://www.googleapis.com/auth/drive.readonly",
+#           "https://www.googleapis.com/auth/calendar.readonly",
+#           "https://www.googleapis.com/auth/tasks.readonly"]
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
           "https://www.googleapis.com/auth/drive.readonly",
           "https://www.googleapis.com/auth/calendar.readonly",
-          "https://www.googleapis.com/auth/tasks.readonly"]
+          "https://www.googleapis.com/auth/tasks.readonly",
+          "https://www.googleapis.com/auth/gmail.send"]
 
 def get_credentials():
     creds = None

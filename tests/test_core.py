@@ -5,7 +5,9 @@ from agents.planner import PlannerAgent
 from agents.rewriter import RewriterAgent
 from datetime import datetime
 from agents.calendar_retriever import parse_window
-
+import pytest
+from agents.composer import COMPOSE
+from agents.mailer import valid_address, clean_header
 NOW = datetime(2026, 10, 2, 10, 0) 
 
 HIST = [{"q": "internship mails", "a": "Found 3 emails", "refs": ["TCS Training"]}]
@@ -66,3 +68,17 @@ def test_audit_skips_token_events(tmp_path, monkeypatch):
     monkeypatch.setattr(audit, "LOG", tmp_path / "a.jsonl")
     audit._write({"ts": 1, "agent": "System", "status": "token", "detail": "secret"})
     assert not (tmp_path / "a.jsonl").exists()
+    
+def test_compose_intent():
+    assert COMPOSE.search("write a mail to rahul about leave")
+    assert COMPOSE.search("Draft an email for my professor")
+    assert not COMPOSE.search("internship mails")
+    assert not COMPOSE.search("send me the mails about tcs")
+
+def test_address_validation():
+    assert valid_address("a@b.com")
+    assert not valid_address("a b@c.com") and not valid_address("x")
+
+def test_header_injection_blocked():
+    with pytest.raises(ValueError):
+        clean_header("hi\nBcc: x@y.com")

@@ -1,323 +1,3 @@
-<!-- <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LocalAgent AI</title>
-<style>
-:root{--bg:#f6f8fa;--card:#fff;--bd:#d0d7de;--tx:#1f2328;--mu:#656d76;--ac:#2f81f7;--ok:#1a7f37;--run:#bf8700;--er:#cf222e}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1419;--card:#1a212b;--bd:#30363d;--tx:#e6edf3;--mu:#8b98a5;--ok:#3fb950;--run:#d29922;--er:#f85149}}
-*{box-sizing:border-box}
-body{margin:0 auto;padding:24px;max-width:980px;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-h1{font-size:22px;margin:0} .mu{color:var(--mu);font-size:13px}
-header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
-form{display:flex;gap:8px;margin:14px 0 8px}
-form input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:15px}
-form input:focus{outline:2px solid var(--ac);outline-offset:-1px}
-button{padding:10px 18px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer;font-size:14px}
-button:disabled{opacity:.5;cursor:wait} button.sec{background:var(--bd);color:var(--tx)}
-label{margin-right:12px;cursor:pointer;user-select:none}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:14px 0}
-.card{padding:8px;border-radius:10px;background:var(--card);border:1px solid var(--bd);text-align:center;transition:.2s}
-.card b{display:block;font-size:12px} .card span{font-size:11px;color:var(--mu)}
-.card.run{border-color:var(--run);box-shadow:0 0 8px var(--run)}
-.card.ok{border-color:var(--ok)} .card.er{border-color:var(--er)} .card.off{opacity:.35}
-.panel{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
-.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.sm{padding:4px 10px;font-size:12px}
-#log{height:150px;overflow:auto;font:12px ui-monospace,monospace;color:var(--mu)}
-#ans p{margin:6px 0} #ans ul{margin:6px 0;padding-left:20px} #ans li{margin:4px 0}
-.chip{display:inline-block;min-width:18px;text-align:center;padding:0 5px;margin:0 1px;border-radius:9px;
- background:var(--ac);color:#fff;font-size:11px;text-decoration:none}
-.cur{display:inline-block;width:7px;height:15px;background:var(--ac);vertical-align:text-bottom;animation:b 1s steps(1) infinite}
-@keyframes b{50%{opacity:0}}
-.src{display:flex;gap:8px;align-items:baseline;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;margin-top:6px;font-size:13px;word-break:break-all}
-.src.hl{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}
-.badge{flex:none;padding:1px 8px;border-radius:9px;color:#fff;font-size:11px}
-#audbox{display:none;max-height:180px;overflow:auto;white-space:pre-wrap}
-#viewer{display:none}
-#vmeta div{font-size:13px;margin:2px 0}
-#vbody,#vprev{white-space:pre-wrap;word-break:break-word;max-height:380px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:10px;margin-top:10px;font:13px/1.5 ui-monospace,monospace}
-#vprev:empty{display:none}
-a.sm{display:inline-block;border-radius:10px;text-decoration:none;background:var(--bd);color:var(--tx)}
-#vsum{border-left:3px solid var(--ac);background:var(--bg);border-radius:6px;padding:8px 14px;margin-top:10px}
-#vsum:empty{display:none} #vsum p{margin:4px 0} #vsum ul{margin:4px 0;padding-left:20px}
-#mic.on{background:var(--er);color:#fff}
-</style></head><body>
-<header><h1>LocalAgent AI</h1><div class="mu" id="meta">loading...</div></header>
-<div class="mu" id="status" style="margin-top:6px"></div>
-
-<form id="f">
-  <input id="q" placeholder="Ask about your files, mail, drive, calendar, tasks or the web..." autofocus autocomplete="off">
-  <button type="button" class="sec" id="mic" title="Speak your question">🎤</button>
-  <button id="btn">Ask</button>
-  <button type="button" class="sec" id="newchat">New chat</button>
-</form>
-<div class="mu" id="perm"></div>
-<div class="mu"><label><input type="checkbox" id="speak"> Speak answers</label>
-<button type="button" class="sec sm" id="stop">Stop speaking</button> <span id="vnote"></span></div>
-<div class="mu"><a href="#" id="aud" style="color:var(--ac)">Show audit log</a></div>
-<pre id="audbox" class="mu"></pre>
-
-<div class="grid" id="grid"></div>
-<div class="panel"><b>Execution log</b><div id="log"></div></div>
-<div class="panel">
-  <div class="ph"><b>Answer <span class="mu" id="time"></span></b>
-    <span>
-      <button type="button" class="sec sm" id="readaloud">Read aloud</button>
-      <button type="button" class="sec sm" id="copy">Copy</button>
-      <button type="button" class="sec sm" id="export">Export .md</button>
-    </span>
-
-  </div>
-  <div id="ans" class="mu">Nothing yet.</div>
-  <div id="src"></div>
-</div>
-<div class="panel" id="viewer">
-  <div class="ph"><b id="vtitle"></b><button type="button" class="sec sm" id="vclose">Close</button></div>
-  <div id="vmeta"></div>
-  <div id="vsum"></div>
-  <div id="vbody"></div>
-  <div id="vatt" style="margin-top:10px"></div><div id="vprev"></div>
-</div>
-<script>
-const $=id=>document.getElementById(id);
-const AG=[["planner","Planner"],["rewriter","Rewriter"],["localfiles","Local Files"],["gmail","Gmail"],
-["drive","Drive"],["calendar","Calendar"],["tasks","Tasks"],["web","Web"],["verifier","Verifier"],["summarizer","Summarizer"]];
-const COL={local:"#8957e5",gmail:"#d1453b",drive:"#1a9f4b",calendar:"#2f81f7",tasks:"#bf8700",web:"#6e7781"};
-let busy=false,raw="",lastQ="",t0=0,timer=null,sumCtl=null;
-$("grid").innerHTML=AG.map(([k,n])=>`<div class="card" id="c-${k}"><b>${n}</b><span>idle</span></div>`).join("");
-
-const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-function md(s){
-  const h=esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
-                .replace(/\[(\d+)\]/g,'<a href="#" class="chip" data-n="$1">$1</a>');
-  const out=[];let inl=false;
-  h.split("\n").forEach(line=>{
-    const m=line.match(/^\s*[*\-\u2022]\s+(.*)/);
-    if(m){if(!inl){out.push("<ul>");inl=true}out.push("<li>"+m[1]+"</li>")}
-    else{if(inl){out.push("</ul>");inl=false}if(line.trim())out.push("<p>"+line+"</p>")}
-  });
-  if(inl)out.push("</ul>");
-  return out.join("");
-}
-function renderAns(streaming){
-  $("ans").className="";
-  $("ans").innerHTML=md(raw)+(streaming?'<span class="cur"></span>':"");
-}
-function setCard(k,cls,txt){const c=$("c-"+k);if(!c)return;
-  c.classList.remove("run","ok","er");c.classList.add(cls);c.querySelector("span").textContent=txt}
-function resetCards(){document.querySelectorAll(".card").forEach(c=>{
-  c.classList.remove("run","ok","er");c.querySelector("span").textContent="idle"})}
-function unlock(){busy=false;$("btn").disabled=false;clearInterval(timer)}
-
-fetch("/config").then(r=>r.json()).then(c=>{
-  $("perm").innerHTML="Use for this query: "+c.sources.map(s=>
-    `<label><input type="checkbox" class="src-cb" value="${s}" checked> ${s}</label>`).join("");
-  $("meta").textContent=`Model: ${c.model} (local) | Permitted: ${c.sources.join(", ")}`;
-  const map={local:"localfiles",gmail:"gmail",drive:"drive",calendar:"calendar",tasks:"tasks",web:"web"};
-  Object.entries(map).forEach(([s,k])=>{if(!c.sources.includes(s))$("c-"+k).classList.add("off")});
-});
-
-async function health(){
-  try{
-    const h=await (await fetch("/health")).json();
-    if(h.demo){$("status").innerHTML="Demo mode: sample data only, no real accounts connected";return}
-    const dot=(ok,l)=>`<span style="color:${ok?"var(--ok)":"var(--er)"}">●</span> ${l}`;
-    $("status").innerHTML=[dot(h.ollama,"Ollama"),dot(h.llm_model,"LLM model"),
-      dot(h.embed_model,"Embeddings"),dot(h.google_token,"Google login"),
-      dot(h.missing_dirs.length===0,"Folders")].join(" &nbsp; ");
-  }catch(e){$("status").textContent="● Server unreachable"}
-}
-health();setInterval(health,10000);
-
-const es=new EventSource("/events");
-es.onmessage=m=>{
-  const e=JSON.parse(m.data), k=e.agent.toLowerCase();
-  if(e.agent==="System"&&e.status==="token"){raw+=e.detail;renderAns(true);return}
-  if(e.agent==="System"){
-    unlock();
-    if(e.status==="result"){
-      const r=JSON.parse(e.detail);raw=r.answer;renderAns(false);
-      renderSources(r.sources);
-    }else{raw="";$("ans").className="mu";$("ans").textContent="Error: "+e.detail}
-    return;
-  }
-  const l=document.createElement("div");
-  l.textContent=`${new Date(e.ts*1000).toLocaleTimeString()} [${e.agent}] ${e.status} ${e.detail}`;
-  $("log").appendChild(l);$("log").scrollTop=1e9;
-  if(e.status==="running")setCard(k,"run","working...");
-  else if(e.status==="done")setCard(k,"ok","done");
-  else if(e.status==="error")setCard(k,"er","error");
-};
-
-$("f").onsubmit=ev=>{
-  ev.preventDefault();
-  const q=$("q").value.trim();
-  if(!q||busy)return;
-  busy=true;$("btn").disabled=true;raw="";lastQ=q;
-  const sources=[...document.querySelectorAll(".src-cb:checked")].map(x=>x.value);
-  resetCards();$("log").innerHTML="";$("src").innerHTML="";
-  $("ans").className="mu";$("ans").textContent="Working...";
-  t0=Date.now();clearInterval(timer);
-  timer=setInterval(()=>{$("time").textContent="· "+Math.round((Date.now()-t0)/1000)+"s"},500);
-  fetch("/ask",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({question:q,sources:sources})});
-};
-
-$("ans").onclick=e=>{
-  const c=e.target.closest(".chip");if(!c)return;
-  e.preventDefault();
-  const s=$("s"+c.dataset.n);if(!s)return;
-  document.querySelectorAll(".src.hl").forEach(x=>x.classList.remove("hl"));
-  s.classList.add("hl");s.scrollIntoView({behavior:"smooth",block:"nearest"});
-  setTimeout(()=>s.classList.remove("hl"),2000);
-};
-$("copy").onclick=()=>{navigator.clipboard.writeText(raw);$("copy").textContent="Copied";
-  setTimeout(()=>$("copy").textContent="Copy",1200)};
-$("export").onclick=()=>{
-  if(!raw)return;
-  const srcs=[...document.querySelectorAll("#src .src")]
-    .map(d=>"- "+d.innerText.replace(/\s+/g," ").trim()).join("\n");
-  const md=`# ${lastQ}\n\n${raw}\n\n## Sources\n${srcs}\n`;
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));
-  a.download="answer.md";a.click();
-};
-$("newchat").onclick=async()=>{
-  await fetch("/reset",{method:"POST"});
-  if(sumCtl)sumCtl.abort();
-  raw="";$("log").innerHTML="";$("src").innerHTML="";$("time").textContent="";
-  $("viewer").style.display="none";
-  $("ans").className="mu";$("ans").textContent="New chat started.";resetCards();
-};
-$("aud").onclick=async e=>{
-  e.preventDefault();
-  const b=$("audbox");b.style.display="block";
-  const r=await (await fetch("/audit")).json();
-  b.textContent=r.map(x=>`${new Date(x.ts*1000).toLocaleString()} [${x.agent}] ${x.status} ${x.detail}`).join("\n");
-};
-
-/* ---------- sources, viewer, summary ---------- */
-function renderSources(list){
-  $("src").innerHTML="";
-  list.forEach((s,i)=>{
-    const m=s.meta||{}, d=document.createElement("div");
-    d.className="src";d.id="s"+(i+1);
-    const sub=[m.from&&"From: "+m.from,m.to&&"To: "+m.to,m.date].filter(Boolean).join(" · ");
-    d.innerHTML=`<span class="badge" style="background:${COL[s.source]||"#6e7781"}">${s.source}</span>`+
-      `<span style="flex:1">[${i+1}] ${esc(s.ref)}<br><span class="mu">${esc(sub)}</span></span>`+
-      `<button type="button" class="sec sm">View</button>`;
-    d.querySelector("button").onclick=()=>openItem(i);
-    $("src").appendChild(d);
-  });
-}
-const mk=(txt,href,fn)=>{
-  const a=document.createElement(href?"a":"button");
-  a.textContent=txt;a.className="sec sm";a.style.marginRight="6px";
-  if(href){a.href=href;a.target="_blank";a.rel="noopener"}else{a.type="button";a.onclick=fn}
-  return a;
-};
-async function prev(url){
-  $("vprev").textContent="Loading preview...";
-  const r=await fetch(url);
-  $("vprev").textContent=r.ok?((await r.text())||"(No readable text)"):"Preview not available.";
-}
-async function summarize(url,label){
-  if(sumCtl)sumCtl.abort();
-  sumCtl=new AbortController();
-  const box=$("vsum"),head="<b>Summary"+(label?" ("+esc(label)+")":"")+"</b>";
-  box.innerHTML=head+'<p class="mu">Summarizing...</p>';
-  try{
-    const r=await fetch(url,{signal:sumCtl.signal});
-    const rd=r.body.getReader(),dec=new TextDecoder();let txt="";
-    while(true){
-      const {done,value}=await rd.read();if(done)break;
-      txt+=dec.decode(value,{stream:true});
-      box.innerHTML=head+md(txt);
-    }
-  }catch(e){if(e.name!=="AbortError")box.innerHTML=head+"<p>Could not summarize.</p>"}
-}
-async function openItem(i){
-  const v=$("viewer");v.style.display="block";
-  $("vsum").innerHTML="";
-  $("vbody").textContent="Loading...";$("vatt").innerHTML="";$("vprev").textContent="";
-  v.scrollIntoView({behavior:"smooth"});
-  const r=await fetch("/item/"+i);
-  if(!r.ok){$("vbody").textContent="Could not load this item.";return}
-  const it=await r.json(), m=it.meta||{};
-  $("vtitle").textContent=m.subject||it.ref;
-  $("vmeta").innerHTML=[["From",m.from],["To",m.to],["Cc",m.cc],["Date",m.date],
-    ["Path",m.path],["Size",m.size],["Modified",m.modified]].filter(x=>x[1])
-    .map(x=>`<div><b>${x[0]}:</b> ${esc(String(x[1]))}</div>`).join("");
-  $("vbody").textContent=it.body||"(No readable text)";
-  const box=$("vatt");
-  if(it.file){box.append(mk("Open original","/file/"+i),mk("Download","/file/"+i+"?dl=1"))}
-  if(m.link&&m.link.startsWith("https://"))box.append(mk("Open in Google Drive",m.link));
-  (it.attachments||[]).forEach((a,j)=>{
-    const row=document.createElement("div");row.style.margin="8px 0";
-    row.append(`Attachment: ${a.name} (${a.size_h})  `);
-    if(a.previewable)row.append(mk("Preview text",null,()=>prev(`/att/${i}/${j}?text=1`)));
-    if(a.previewable)row.append(mk("Summarize",null,()=>summarize(`/summary/${i}?att=${j}`,a.name)));
-    if(a.inline)row.append(mk("Open",`/att/${i}/${j}`));
-    row.append(mk("Download",`/att/${i}/${j}?dl=1`));
-    box.append(row);
-  });
-  summarize("/summary/"+i,"");
-}
-$("vclose").onclick=()=>{if(sumCtl)sumCtl.abort();$("viewer").style.display="none"};
-/* ---------- voice ---------- */
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let rec=null,listening=false,voiceOK=false;
-
-function cleanForSpeech(t){
-  return t.replace(/\[\d+\]/g,"").replace(/\*\*/g,"")
-          .replace(/^\s*[*\-\u2022]\s+/gm,"").replace(/\s+/g," ").trim();
-}
-function pickVoice(){                    // prefer voices that run on this device
-  const vs=speechSynthesis.getVoices(), lang=(navigator.language||"en-US").toLowerCase();
-  return vs.find(v=>v.localService&&v.lang.toLowerCase()===lang)
-      ||vs.find(v=>v.localService&&v.lang.toLowerCase().startsWith("en"))||null;
-}
-function speak(text){
-  if(!("speechSynthesis" in window))return;
-  speechSynthesis.cancel();
-  const t=cleanForSpeech(text);if(!t)return;
-  const u=new SpeechSynthesisUtterance(t.slice(0,1500)), v=pickVoice();
-  if(v){u.voice=v;u.lang=v.lang}
-  speechSynthesis.speak(u);
-}
-$("stop").onclick=()=>speechSynthesis.cancel();
-$("readaloud").onclick=()=>speak(raw);
-$("f").addEventListener("submit",()=>speechSynthesis.cancel());
-$("newchat").addEventListener("click",()=>speechSynthesis.cancel());
-
-if(!SR){
-  $("mic").style.display="none";
-  $("vnote").textContent="Voice input needs Chrome or Edge.";
-}else{
-  rec=new SR();rec.lang="en-IN";rec.interimResults=true;rec.continuous=false;
-  rec.onstart=()=>{listening=true;$("mic").classList.add("on")};
-  rec.onend=()=>{listening=false;$("mic").classList.remove("on")};
-  rec.onerror=e=>{$("vnote").textContent="Mic: "+e.error};
-  rec.onresult=e=>{
-    let txt="",final=false;
-    for(let i=0;i<e.results.length;i++){
-      txt+=e.results[i][0].transcript;
-      if(e.results[i].isFinal)final=true;
-    }
-    $("q").value=txt;
-    if(final&&!busy)$("f").requestSubmit();     // ask automatically when you stop talking
-  };
-  $("mic").onclick=()=>{
-    if(listening){rec.stop();return}
-    if(!voiceOK){
-      if(!confirm("Voice input uses Chrome's speech service: your audio is sent to Google to be turned into text. Spoken answers use your device's own voices. Continue?"))return;
-      voiceOK=true;
-    }
-    speechSynthesis.cancel();
-    try{rec.start()}catch(e){}
-  };
-}
-</script></body></html> -->
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -361,6 +41,10 @@ a.sm{display:inline-block;border-radius:10px;text-decoration:none;background:var
 #vsum{border-left:3px solid var(--ac);background:var(--bg);border-radius:6px;padding:8px 14px;margin-top:10px}
 #vsum:empty{display:none} #vsum p{margin:4px 0} #vsum ul{margin:4px 0;padding-left:20px}
 #mic.on{background:var(--er);color:#fff}
+#compose{display:none}
+#compose label{display:block;font-size:13px;margin-top:8px}
+#compose input[type=text],#compose textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:14px system-ui}
+#compose textarea{min-height:200px} #cnote{font-size:13px;margin:6px 0}
 </style></head><body>
 <header><h1>LocalAgent AI</h1><div class="mu" id="meta">loading...</div></header>
 <div class="mu" id="status" style="margin-top:6px"></div>
@@ -397,10 +81,18 @@ a.sm{display:inline-block;border-radius:10px;text-decoration:none;background:var
   <div id="vbody"></div>
   <div id="vatt" style="margin-top:10px"></div><div id="vprev"></div>
 </div>
+<div class="panel" id="compose">
+  <div class="ph"><b>Draft email</b><button type="button" class="sec sm" id="cclose">Cancel</button></div>
+  <div id="cnote" class="mu"></div>
+  <label>To <input type="text" id="cto" placeholder="recipient@example.com"></label>
+  <label>Subject <input type="text" id="csub"></label>
+  <label>Message <textarea id="cbody"></textarea></label>
+  <div style="margin-top:10px"><button type="button" id="csend">Send email</button> <span id="cstat" class="mu"></span></div>
+</div>
 <script>
 const $=id=>document.getElementById(id);
 const AG=[["planner","Planner"],["rewriter","Rewriter"],["localfiles","Local Files"],["gmail","Gmail"],
-["drive","Drive"],["calendar","Calendar"],["tasks","Tasks"],["web","Web"],["verifier","Verifier"],["summarizer","Summarizer"]];
+["drive","Drive"],["calendar","Calendar"],["tasks","Tasks"],["web","Web"],["composer","Composer"],["mailer","Mailer"],["verifier","Verifier"],["summarizer","Summarizer"]];
 const COL={local:"#8957e5",gmail:"#d1453b",drive:"#1a9f4b",calendar:"#2f81f7",tasks:"#bf8700",web:"#6e7781"};
 let busy=false,raw="",lastQ="",t0=0,timer=null,sumCtl=null;
 $("grid").innerHTML=AG.map(([k,n])=>`<div class="card" id="c-${k}"><b>${n}</b><span>idle</span></div>`).join("");
@@ -454,6 +146,7 @@ es.onmessage=m=>{
   if(e.agent==="System"&&e.status==="token"){raw+=e.detail;renderAns(true);return}
   if(e.agent==="System"){
     unlock();
+    if(e.status==="draft"){showDraft(JSON.parse(e.detail));return}
     if(e.status==="result"){
       const r=JSON.parse(e.detail);raw=r.answer;renderAns(false);
       renderSources(r.sources);
@@ -572,6 +265,7 @@ async function openItem(i){
   const box=$("vatt");
   if(it.file){box.append(mk("Open original","/file/"+i),mk("Download","/file/"+i+"?dl=1"))}
   if(m.link&&m.link.startsWith("https://"))box.append(mk("Open in Google Drive",m.link));
+  if(it.source==="gmail")box.append(mk("Draft reply",null,()=>compose("Reply to this email",i)));
   (it.attachments||[]).forEach((a,j)=>{
     const row=document.createElement("div");row.style.margin="8px 0";
     row.append(`Attachment: ${a.name} (${a.size_h})  `);
@@ -638,4 +332,36 @@ if(!SR){
     try{rec.start()}catch(e){}
   };
 }
+/* ---------- compose and send ---------- */
+let draftId="";
+const H={"Content-Type":"application/json","X-Requested-With":"localagent"};
+const okAddr=a=>/^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/.test(a);
+function showDraft(d){
+  draftId=d.draft_id;
+  $("compose").style.display="block";
+  $("cto").value=d.to||"";$("csub").value=d.subject||"";$("cbody").value=d.body||"";
+  $("cstat").textContent="";
+  $("cnote").textContent=d.to?"Check the recipient, edit the message if you like, then press Send."
+    :"Who should receive this? Enter the recipient's email address, review the message, then press Send.";
+  $("ans").className="";$("ans").textContent="I drafted an email for you. Review it below. Nothing is sent until you press Send.";
+  $("compose").scrollIntoView({behavior:"smooth"});
+  (d.to?$("cbody"):$("cto")).focus();
+}
+function compose(instruction,item){
+  fetch("/compose",{method:"POST",headers:H,body:JSON.stringify({instruction,item})});
+}
+$("cclose").onclick=()=>{$("compose").style.display="none";draftId=""};
+$("csend").onclick=async()=>{
+  const to=$("cto").value.trim();
+  if(!okAddr(to)){$("cstat").textContent="Enter a valid recipient email address.";$("cto").focus();return}
+  if(!$("cbody").value.trim()){$("cstat").textContent="The message is empty.";return}
+  if(!confirm("Send this email to "+to+"?"))return;
+  $("csend").disabled=true;$("cstat").textContent="Sending...";
+  const r=await fetch("/send",{method:"POST",headers:H,body:JSON.stringify(
+    {to,subject:$("csub").value,body:$("cbody").value,draft_id:draftId,confirm:true})});
+  const j=await r.json().catch(()=>({}));
+  $("csend").disabled=false;
+  if(r.ok){$("cstat").textContent=j.demo?"Demo mode: the email was NOT really sent.":"Email sent to "+to+".";draftId=""}
+  else $("cstat").textContent="Could not send: "+(j.detail||r.status);
+};
 </script></body></html>

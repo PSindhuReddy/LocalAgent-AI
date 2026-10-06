@@ -4,7 +4,8 @@ from events import bus
 LOG = pathlib.Path("audit_log.jsonl")
 
 def _write(ev):
-    if ev["agent"] == "System" and ev["status"] in ("result", "token"):
+    # if ev["agent"] == "System" and ev["status"] in ("result", "token"):
+    if ev["agent"] == "System" and ev["status"] in ("result", "token", "draft"):
         return
     with LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps(ev) + "\n")

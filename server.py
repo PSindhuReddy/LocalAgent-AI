@@ -283,6 +283,7 @@
 #     uvicorn.run(app, host="127.0.0.1", port=8000)   # localhost only
 import json, queue, threading, mimetypes, pathlib, os, tempfile, time, uuid, re
 from datetime import datetime
+from agents.composer import ComposerAgent, COMPOSE
 from urllib.parse import quote
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import (HTMLResponse, StreamingResponse, Response,
@@ -443,9 +444,8 @@ def item(i: int, request: Request):
         m = {"path": str(p), "size": _human(st.st_size),
              "modified": datetime.fromtimestamp(st.st_mtime).strftime("%d %b %Y %H:%M")}
         is_file = True
-    return {"ref": s["ref"], "meta": m, "body": body[:200000],
-            "attachments": atts, "file": is_file}
-
+    return {"source": s["source"], "ref": s["ref"], "meta": m,
+            "body": body[:200000], "attachments": atts, "file": is_file}
 
 @app.get("/file/{i}")
 def file(i: int, request: Request, dl: int = 0):
@@ -528,7 +528,104 @@ def summary(i: int, request: Request, att: int = -1):
             yield "Could not summarize: the local LLM (Ollama) isn't responding."
     return StreamingResponse(gen(), media_type="text/plain")
 
+# ---------- compose and send (human-in-the-loop) ----------
+DRAFTS, SENT = {}, {}
 
+
+def _guard(request):
+    h = request.headers
+    if h.get("x-requested-with") != "localagent":
+        raise HTTPException(403, "Blocked")
+    if not DEMO and h.get("host", "").split(":")[0] not in ("127.0.0.1", "localhost"):
+        raise HTTPException(403, "Blocked")
+    o = h.get("origin")
+    if o and o.split("://", 1)[-1] != h.get("host"):
+        raise HTTPException(403, "Blocked")
+
+
+def do_compose(sid, instruction, item=None):
+    reply, items = None, STATE.get(sid, [])
+    if item is not None and 0 <= item < len(items) and items[item]["source"] == "gmail":
+        s = items[item]
+        m = s.get("meta", {})
+        reply = {"from": m.get("from", ""), "subject": m.get("subject", ""),
+                 "body": s.get("full") or s["text"]}
+    if DEMO:
+        bus.emit("Composer", "running", "Drafting email (demo template)")
+        d = ComposerAgent({}, None).template(instruction)
+        if reply:
+            from email.utils import parseaddr
+            d["to"] = parseaddr(reply["from"])[1]
+            d["subject"] = "Re: " + reply["subject"]
+        bus.emit("Composer", "done", "Draft ready")
+    else:
+        d = ComposerAgent(orch.cfg, orch.llm).draft(instruction, orch.history[-2:], reply)
+    did = uuid.uuid4().hex
+    DRAFTS.setdefault(sid, {})[did] = time.time()
+    bus.emit("System", "draft", json.dumps({**d, "draft_id": did}))
+
+
+class Comp(BaseModel):
+    instruction: str = "Reply to this email"
+    item: int | None = None
+
+
+@app.post("/compose")
+def compose_ep(b: Comp, request: Request):
+    _guard(request)
+    sid = sid_of(request)
+
+    def work():
+        ctx.sid = sid
+        try:
+            do_compose(sid, b.instruction[:500], b.item)
+        except Exception as e:
+            bus.emit("System", "error", str(e))
+    threading.Thread(target=work, daemon=True).start()
+    return {"ok": True}
+
+
+class Send(BaseModel):
+    to: str
+    subject: str
+    body: str
+    draft_id: str
+    confirm: bool = False
+
+
+@app.post("/send")
+def send_ep(b: Send, request: Request):
+    _guard(request)
+    sid, now = sid_of(request), time.time()
+    made = DRAFTS.get(sid, {}).get(b.draft_id)
+    if not b.confirm or not made or now - made > 1800:
+        raise HTTPException(400, "Draft expired or not confirmed. Create the draft again.")
+    recent = [t for t in SENT.get(sid, []) if now - t < 3600]
+    if len(recent) >= 5:
+        raise HTTPException(429, "Send limit reached (5 per hour)")
+    if len(b.body) > 10000 or len(b.subject) > 200:
+        raise HTTPException(400, "Message or subject too long")
+    from agents.mailer import MailerAgent, valid_address, clean_header, mask
+    ctx.sid = sid
+    try:
+        to = clean_header(b.to)
+        if not valid_address(to):
+            raise ValueError("That is not a valid email address")
+        if DEMO:
+            bus.emit("Mailer", "done", "Demo mode: email NOT sent")
+            return {"ok": True, "demo": True}
+        MailerAgent(orch.cfg, None).send(to, b.subject, b.body)
+        DRAFTS[sid].pop(b.draft_id, None)
+        SENT[sid] = recent + [now]
+        return {"ok": True}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        bus.emit("Mailer", "error", "Sending failed")
+        raise HTTPException(502, str(e)[:200])
+    finally:
+        ctx.sid = None
+        
 # ---------- chat ----------
 @app.post("/reset")
 def reset(request: Request):
@@ -549,6 +646,9 @@ def ask(body: Ask, request: Request):
     def work():
         ctx.sid = sid
         try:
+            if COMPOSE.search(body.question):
+                do_compose(sid, body.question[:500])
+                return
             out = orch.run(body.question, body.sources,
                            on_token=lambda t: bus.emit("System", "token", t))
             if len(STATE) > 200:
